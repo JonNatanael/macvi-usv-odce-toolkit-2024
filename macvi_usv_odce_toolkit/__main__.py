@@ -30,20 +30,20 @@ def _perform_full_evaluation(dataset_json_file, results_json_file, sequences=Non
     results = {}
 
     # Setup 1
-    logging.info("Evaluating Setup 1...")
-    start_time = time.time()
-    results['setup1'] = macvi_usv_odce_toolkit.evaluate_detection_results_setup1(
-        dataset_json_file,
-        results_json_file,
-        sequences,
-    )
-    elapsed = time.time() - start_time
-    logging.info("Evaluation complete in %.2f seconds!", elapsed)
+    # logging.info("Evaluating Setup 1...")
+    # start_time = time.time()
+    # results['setup1'] = macvi_usv_odce_toolkit.evaluate_detection_results_setup1(
+    #     dataset_json_file,
+    #     results_json_file,
+    #     sequences,
+    # )
+    # elapsed = time.time() - start_time
+    # logging.info("Evaluation complete in %.2f seconds!", elapsed)
 
     # Setup 2
-    logging.info("Evaluating Setup 2...")
+    logging.info("Evaluating...")
     start_time = time.time()
-    results['setup2'] = macvi_usv_odce_toolkit.evaluate_detection_results_setup2(
+    results['macvi_2023'] = macvi_usv_odce_toolkit.evaluate_detection_results_setup2(
         dataset_json_file,
         results_json_file,
         sequences,
@@ -52,16 +52,16 @@ def _perform_full_evaluation(dataset_json_file, results_json_file, sequences=Non
     logging.info("Evaluation complete in %.2f seconds!", elapsed)
 
     # Setup 3
-    logging.info("Evaluating Setup 3...")
-    start_time = time.time()
-    results['setup3'] = macvi_usv_odce_toolkit.evaluate_detection_results_setup3(
-        dataset_json_file,
-        results_json_file,
-        sequences,
-    )
-    elapsed = time.time() - start_time
-    logging.info("Evaluation complete in %.2f seconds!", elapsed)
-    logging.info("")
+    # logging.info("Evaluating Setup 3...")
+    # start_time = time.time()
+    # results['setup3'] = macvi_usv_odce_toolkit.evaluate_detection_results_setup3(
+    #     dataset_json_file,
+    #     results_json_file,
+    #     sequences,
+    # )
+    # elapsed = time.time() - start_time
+    # logging.info("Evaluation complete in %.2f seconds!", elapsed)
+    # logging.info("")
 
     return results
 
@@ -69,21 +69,22 @@ def _perform_full_evaluation(dataset_json_file, results_json_file, sequences=Non
 def _display_extended_results(results):
     # Display extended results to stderr, using logging.info()
     logging.info("Results: F_all F_small F_medium F_large")
-    logging.info("Setup_1: %.03f %.03f %.03f %.03f", *results['setup1'])
-    logging.info("Setup_2: %.03f %.03f %.03f %.03f", *results['setup2'])
-    logging.info("Setup_3: %.03f %.03f %.03f %.03f", *results['setup3'])
+    # logging.info("Setup_1: %.03f %.03f %.03f %.03f", *results['setup1'])
+    logging.info("Setup_2: %.03f %.03f %.03f %.03f", *results['macvi_2023'])
+    # logging.info("Setup_3: %.03f %.03f %.03f %.03f", *results['setup3'])
     logging.info("")
 
 
 def _display_final_results(results):
     # Display final results to stdout
-    f_s1 = results['setup1'][0]  # F_all for Setup 1
-    f_s2 = results['setup2'][0]  # F_all for Setup 2
-    f_s3 = results['setup3'][0]  # F_all for Setup 3
-    f_avg = (f_s1 + f_s2 + f_s3) / 3
+    # f_s1 = results['setup1'][0]  # F_all for Setup 1
+    f_s2 = results['macvi_2023'][0]  # F_all for Setup 2
+    # f_s3 = results['setup3'][0]  # F_all for Setup 3
+    f_avg = f_s2
+    # f_avg = (f_s1 + f_s2 + f_s3) / 3
 
-    print("Challenge results (F_avg, F_s1, F_s2, F_s3):")
-    print(f"{f_avg:.03f} {f_s1:.03f} {f_s2:.03f} {f_s3:.03f}")
+    print("Challenge results F1:")
+    print(f"{f_avg:.03f}")
 
 
 def _collect_to_archive(archive, path, archive_path):

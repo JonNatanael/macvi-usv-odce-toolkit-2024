@@ -1,10 +1,11 @@
+
 # USV Obstacle Detection Challenge Evaluation Toolkit
 
 This repository contains source code of the evaluation toolkit for the
-*USV Obstacle Detection Challenge*, hosted at the *1st Workshop on Maritime
-Computer Vision (MaCVi)* as part of the WACV2023.
+*USV Obstacle Detection Challenge*, hosted at the *2nd Workshop on Maritime
+Computer Vision (MaCVi)* as part of the WACV2024.
 
-The official site for the challenge can be found [here](https://seadronessee.cs.uni-tuebingen.de/wacv23_MODS_od).
+The official site for the challenge can be found [here](https://macvi.org/workshop/macvi24).
 
 The evaluation protocol is based on the paper by *Bovcon et al.*:
 
@@ -22,14 +23,13 @@ in `object_detection` sub-directory in `bbox_obstacle_detection` branch
 
 ## Getting started
 
-### 1. Download the MODS dataset
+### 1. Download the LaRS dataset
 
-Download and unpack [the MODS dataset](https://vision.fe.uni-lj.si/public/mods).
+Download and unpack [the LaRS dataset](https://vision.fe.uni-lj.si/public/mods).
 
 ### 2. Process the dataset with your detection method
 
-Use your algorithm to process the whole MODS dataset. The MODS dataset
-does not provide training data, and should be used only for evaluation.
+Use your algorithm to process the validation subset of the LaRS dataset.
 
 For training data, you can use any other dataset that is available to
 you, including the [MODD2 dataset](https://box.vicos.si/borja/viamaro/index.html)
@@ -43,99 +43,48 @@ in a single JSON file using the format described below.
 #### Results file format
 
 The results JSON file, expected by the evaluation tool, is very similar
-to the `mods.json` file from the MODS dataset, except that each frame
+to the `panoptic_annotations.json` file from the LaRS dataset, except that each frame
 object provides a `detections` array describing detected obstacles:
 
 ```json
 {
-  "dataset": {
-    "name": "myalgorithm",
-    "num_seq": 94,
-    "sequences": [
-      {
-        "id": 0,
-        "path": "/kope100-00006790-00007090/frames/",
-        "num_frames": 31
-        "frames": [
-          {
-            "id": 0,
-            "image_file_name": "00006790L.jpg",
-            "detections": []
-          },
-          <...>
-          {
-            "id": 30,
-            "image_file_name": "00007090L.jpg",
-            "detections": []
-          }
-        ]
-      },
-      {
-        "id": 1,
-        "path": "/kope100-00011830-00012500/frames/",
-        "num_frames": 68,
-        "frames": [
-          {
-            "id": 0,
-            "image_file_name": "00011830L.jpg",
-            "detections": [
-              {
-                "id": 0,
-                "type": 2,
-                "bbox": [366, 544, 16, 22]
-              }
-            ]
-          },
-          {
-            "id": 1,
-            "image_file_name": "00011840L.jpg",
-            "detections": [
-              {
-                "id": 0,
-                "type": 2,
-                "bbox": [156, 575, 14, 14]
-              },
-              {
-                "id": 1,
-                "type": 2,
-                "bbox": [270,555,15,20]
-              }
-            ]
-          },
-          <...>
-        ],
-      },
-      <...>
-    ]
-  }
+  "info": {},
+  "images": [
+    {
+      "id": 3995,
+      "width": 1280,
+      "height": 720,
+      "file_name": "yt028_01_00030.jpg"
+    },
+    <...>
+  ],
+  "annotations": [
+    {
+      "image_id": 3995,
+      "file_name": "yt028_01_00030.png",
+      "detections": [
+        {
+          "id": 1,
+          "bbox": [
+            0,
+            0,
+            1280,
+            413
+          ],
+        },
+        <...>
+      ]
+    },
+    <...>
+  ]
 }
+
 ```
+The JSON file must contain the list of LaRS images, then the list of annotations, one annotation per image. The annotation element must contain the appropriate `id` filed (that matches the corresponding image ID). Each annotation element must contain a `detections` array, which contains the detections produced by your algorithm. If there are no detections in the frame, the `detections` should be empty. Otherwise, it should contain one object per detection, consisting of an `id` which should be unique within the image, and `bbox` (bounding box; `[x, y, width, height]`).
 
-The JSON file must contain a root `dataset` object, which must contain
-a `sequences` array. Each element is a sequence object that corresponds
-to the sequence object from in the dataset (`mods.json`) file. Each
-sequence object must contain an `id` field (with a value that matches
-the `id` of the sequence in the dataset), and a `detections` array.
-If there are no detections in the frame, the `detections` should be
-an empty array (or alternatively, it can be omitted altogether).
-Otherwise, it should contain one object per detection, each consisting
-of an`id` (which must be unique within the image), `type` (denoting the
-detection type; see below), and `bbox` (bounding box; `[x, y, width, height]`).
+The above example shows the structure of the results file. In fact, the easiest way of generating a correct results file would be to load the data from `panotpic_annotations.json` and, for each element of the `annotations` list, add the `detections` array.
 
-The `type` field denotes the detection's category, and can be either
-a string or an integer, with following values being recognized:
- * `"ship"` or `0`
- * `"person"` or `1`
- * `"other"` or `2`
-
-In the above example, we included additional fields to make it easier
-to compare the structure to that of the `mods.json` file. The easiest
-way to generate the results file is, in fact, taking the data from the
-`mods.json` file and adding the `detections` arrays to the frame
-objects.
-
-For reference, we provide exemplar result JSON files for the methods
-evaluated in the *Bovcon et al.* paper (MaskRCNN, FCOS, YOLOv4, and SSD):
+For reference, we provide an exemplar result JSON file for the methods YOLOv5:
 * [detection-results-original.zip](https://rokm.dynu.net/macvi2023_detection/detection-results-original.zip):
   this archive contains original JSON files, as provided by the authors.
 * [detection-results-minimal.zip](https://rokm.dynu.net/macvi2023_detection/detection-results-minimal.zip):
@@ -331,7 +280,7 @@ The tool performs the evaluation, and generates the archive that
 contains raw detection results (the results JSON file that was used
 for evaluation), the evaluation results, and the collected source code.
 
-If the source code path points to a directory, its while contents are
+If the source code path points to a directory, its contents are
 recursively collected into the submission archive. If the source code
 path points to a file (a single-file source, or a pre-generated archive
 containing the whole source code), the file is collected into archive
