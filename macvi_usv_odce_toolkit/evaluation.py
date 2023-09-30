@@ -5,8 +5,6 @@ import contextlib  # redirect_stdout
 
 import cv2
 import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.patches import Rectangle
 
 import pycocotools.coco
 import pycocotools.cocoeval
