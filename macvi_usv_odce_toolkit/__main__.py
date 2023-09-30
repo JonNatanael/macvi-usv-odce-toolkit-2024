@@ -6,86 +6,35 @@ import time
 import zipfile
 import json
 
-import macvi_usv_odce_toolkit
+from . import evaluation
 
+def _perform_full_evaluation(lars_path, eval_set, results_json_file):
 
-def _process_sequences_list(sequences_list_str):
-    sequence_ids = set()
-
-    # Split on comma
-    for token in sequences_list_str.split(","):
-        elements = token.split("-")
-        if len(elements) == 1:
-            sequence_ids.add(int(elements[0]))
-        elif len(elements) == 2:
-            for i in range(int(elements[0]), int(elements[1]) + 1):
-                sequence_ids.add(i)
-        else:
-            logging.warning("Invalid sequence list token: %r", token)
-
-    return sorted(list(sequence_ids))
-
-
-def _perform_full_evaluation(dataset_json_file, results_json_file, sequences=None):
-    results = {}
-
-    # Setup 1
-    # logging.info("Evaluating Setup 1...")
-    # start_time = time.time()
-    # results['setup1'] = macvi_usv_odce_toolkit.evaluate_detection_results_setup1(
-    #     dataset_json_file,
-    #     results_json_file,
-    #     sequences,
-    # )
-    # elapsed = time.time() - start_time
-    # logging.info("Evaluation complete in %.2f seconds!", elapsed)
-
-    # Setup 2
     logging.info("Evaluating...")
     start_time = time.time()
-    results['macvi_2023'] = macvi_usv_odce_toolkit.evaluate_detection_results_setup2(
-        dataset_json_file,
+    results = evaluation.evaluate_detection_results(
+        lars_path,
+        eval_set,
         results_json_file,
-        sequences,
     )
     elapsed = time.time() - start_time
     logging.info("Evaluation complete in %.2f seconds!", elapsed)
 
-    # Setup 3
-    # logging.info("Evaluating Setup 3...")
-    # start_time = time.time()
-    # results['setup3'] = macvi_usv_odce_toolkit.evaluate_detection_results_setup3(
-    #     dataset_json_file,
-    #     results_json_file,
-    #     sequences,
-    # )
-    # elapsed = time.time() - start_time
-    # logging.info("Evaluation complete in %.2f seconds!", elapsed)
-    # logging.info("")
-
     return results
-
 
 def _display_extended_results(results):
     # Display extended results to stderr, using logging.info()
     logging.info("Results: F_all F_small F_medium F_large")
-    # logging.info("Setup_1: %.03f %.03f %.03f %.03f", *results['setup1'])
-    logging.info("Setup_2: %.03f %.03f %.03f %.03f", *results['macvi_2023'])
-    # logging.info("Setup_3: %.03f %.03f %.03f %.03f", *results['setup3'])
+    logging.info("Setup_2: %.03f %.03f %.03f %.03f", *results)
     logging.info("")
-
 
 def _display_final_results(results):
     # Display final results to stdout
-    # f_s1 = results['setup1'][0]  # F_all for Setup 1
-    f_s2 = results['macvi_2023'][0]  # F_all for Setup 2
-    # f_s3 = results['setup3'][0]  # F_all for Setup 3
-    f_avg = f_s2
-    # f_avg = (f_s1 + f_s2 + f_s3) / 3
+    f = results[0]
 
     print("Challenge results F1:")
-    print(f"{f_avg:.03f}")
-
+    res = {'F1': f}
+    print(res)
 
 def _collect_to_archive(archive, path, archive_path):
     if os.path.isfile(path):
@@ -95,7 +44,6 @@ def _collect_to_archive(archive, path, archive_path):
             archive.write(path, archive_path)
         for nm in sorted(os.listdir(path)):
             _collect_to_archive(archive, os.path.join(path, nm), os.path.join(archive_path, nm))
-
 
 def cmd_evaluate(args):
     """
@@ -109,26 +57,23 @@ def cmd_evaluate(args):
         argparse Namespace structure, obtained by argparse.ArgumentParser.parse_args().
     """
     # Collect arguments
-    dataset_json_file = getattr(args, 'dataset-json-file')
     results_json_file = getattr(args, 'results-json-file')
+    lars_path = getattr(args, 'lars-path')
+    eval_set = getattr(args, 'eval-set')
     output_file = args.output_file
-    sequences = args.sequences
-
-    if sequences is not None:
-        sequences = _process_sequences_list(sequences)
 
     # Display settings
     logging.info("")
     logging.info("Settings:")
     logging.info(" - mode: %r", args.command)
-    logging.info(" - dataset JSON file: %r", dataset_json_file)
+    logging.info(" - LaRS path: %r", lars_path)
+    logging.info(" - evaluation subset: %r", eval_set)
     logging.info(" - results JSON file: %r", results_json_file)
     logging.info(" - output file: %r", output_file)
-    logging.info(" - sequence(s): %r", sequences)
     logging.info("")
 
     # Run the evaluation
-    results = _perform_full_evaluation(dataset_json_file, results_json_file, sequences)
+    results = _perform_full_evaluation(lars_path, eval_set, results_json_file)
 
     # Display debug/extended results
     _display_extended_results(results)
@@ -161,16 +106,22 @@ def cmd_prepare_submission(args):
         argparse Namespace structure, obtained by argparse.ArgumentParser.parse_args().
     """
     # Collect arguments
-    dataset_json_file = getattr(args, 'dataset-json-file')
     results_json_file = getattr(args, 'results-json-file')
+    lars_path = getattr(args, 'lars-path')
     source_code_path = getattr(args, 'source-code-path')
+    # optional arguments
     output_file = args.output_file
+    eval_set = args.eval_set
+
+    if eval_set is None:
+        eval_set = 'test'
 
     # Display settings
     logging.info("")
     logging.info("Settings:")
     logging.info(" - mode: %r", args.command)
-    logging.info(" - dataset JSON file: %r", dataset_json_file)
+    logging.info(" - LaRS path: %r", lars_path)
+    logging.info(" - evaluation subset: %r", eval_set)
     logging.info(" - results JSON file: %r", results_json_file)
     logging.info(" - source code path: %r", source_code_path)
     logging.info(" - output file: %r", output_file)
@@ -181,8 +132,8 @@ def cmd_prepare_submission(args):
         logging.error("Invalid source code path %r: not a file or directory!", source_code_path)
         sys.exit(-1)
 
-    # Run the evaluation (always on all sequences)
-    results = _perform_full_evaluation(dataset_json_file, results_json_file)
+    # Run the evaluation
+    results = _perform_full_evaluation(lars_path, eval_set, results_json_file)
 
     # Display debug/extended results
     _display_extended_results(results)
@@ -234,7 +185,12 @@ def cmd_unpack_submission(args):
     # Collect arguments
     submission_file = getattr(args, 'submission-file')
     target_path = getattr(args, 'target-path')
-    dataset_json_file = args.dataset_json_file
+    # optional arguments
+    eval_set = args.eval_set
+    lars_path = args.lars_path
+
+    if eval_set is None:
+        eval_set = 'test'
 
     # Display settings
     logging.info("")
@@ -242,7 +198,8 @@ def cmd_unpack_submission(args):
     logging.info(" - mode: %r", args.command)
     logging.info(" - submission archive: %r", submission_file)
     logging.info(" - target path: %r", target_path)
-    logging.info(" - dataset JSON file (local re-evaluation): %r", dataset_json_file)
+    logging.info(" - LaRS path: %r", lars_path)
+    logging.info(" - evaluation subset: %r", eval_set)
     logging.info("")
 
     # Unpack submission
@@ -253,10 +210,11 @@ def cmd_unpack_submission(args):
     logging.info("")
 
     # Local re-evaluation?
-    if dataset_json_file:
+    if lars_path:
         results_json_file = os.path.join(target_path, "detection_results.json")
         logging.info("Performing local re-evaluation of raw results...")
-        results = _perform_full_evaluation(dataset_json_file, results_json_file)
+        results = _perform_full_evaluation(lars_path, eval_set, results_json_file)
+
     else:
         evaluation_json_file = os.path.join(target_path, "evaluation_results.json")
         logging.info("Using submitted evaluation results...")
@@ -296,7 +254,6 @@ def main(args=None):
         prog="macvi_usv_odce_tool",
         description="MaCVi USV Obstacle Detection Challenge Evaluation Toolkit",
     )
-
     parser.add_argument(
         '--version',
         action='version',
@@ -322,26 +279,25 @@ def main(args=None):
         command_function=cmd_evaluate,
     )
     subparser.add_argument(
-        "dataset-json-file",
+        "lars-path",
         type=str,
-        help="Full path to the MODS dataset JSON file (mods.json).",
+        help="Path to the LaRS dataset, needed for ignore masks",
+    )
+    subparser.add_argument(
+        "eval-set",
+        type=str,
+        help="Subset to evaluate, either train, test or val",
     )
     subparser.add_argument(
         "results-json-file",
         type=str,
-        help="Full path to the JSON file with detection results.",
-    )
+        help="Full path to the JSON file with detection results for the corresponding LaRS subset.",
+    )    
     subparser.add_argument(
         "--output-file",
         type=str,
         metavar="FILENAME",
         help="Store evaluation results in a JSON file in addition to displaying them in console.",
-    )
-    subparser.add_argument(
-        "--sequences",
-        type=str,
-        metavar="SEQUENCE_LIST",
-        help="Optional comma-separated list of sequence IDs to use during evaluation (default: use all sequences).",
     )
 
     # Command: prepare-submission
@@ -355,9 +311,9 @@ def main(args=None):
         command_function=cmd_prepare_submission,
     )
     subparser.add_argument(
-        "dataset-json-file",
+        "lars-path",
         type=str,
-        help="Full path to the MODS dataset JSON file (mods.json).",
+        help="Path to the LaRS dataset, needed for ignore masks",
     )
     subparser.add_argument(
         "results-json-file",
@@ -374,6 +330,11 @@ def main(args=None):
         type=str,
         default="submission.zip",
         help="Name of the generated archive for submission.",
+    )
+    subparser.add_argument(
+        "--eval-set",
+        type=str,
+        help="Subset to evaluate, either train, test or val",
     )
 
     # Command: unpack-submission
@@ -397,10 +358,14 @@ def main(args=None):
         help="Full path to directory into which submission archive is to be unpacked.",
     )
     subparser.add_argument(
-        "--dataset-json-file",
+        "--lars-path",
         type=str,
-        metavar="FILENAME",
-        help="Full path to the MODS dataset JSON file (mods.json) for local result re-evaluation.",
+        help="Path to the LaRS dataset, needed for ignore masks",
+    )
+    subparser.add_argument(
+        "--eval-set",
+        type=str,
+        help="Subset to evaluate, either train, test or val",
     )
 
     # *** Parse command-line arguments ***

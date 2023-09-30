@@ -1,4 +1,5 @@
 
+
 # USV Obstacle Detection Challenge Evaluation Toolkit
 
 This repository contains source code of the evaluation toolkit for the
@@ -7,7 +8,7 @@ Computer Vision (MaCVi)* as part of the WACV2024.
 
 The official site for the challenge can be found [here](https://macvi.org/workshop/macvi24).
 
-The evaluation protocol is based on the paper by *Bovcon et al.*:
+The evaluation protocol is the standard IoU-based bounding box evaluation roughly based on the paper by *Bovcon et al.*:
 
 Bovcon Borja, Muhovič Jon, Vranac Duško, Mozetič Dean, Perš Janez and Kristan Matej,
 *"MODS -- A USV-oriented object detection and obstacle segmentation benchmark"*,
@@ -19,26 +20,23 @@ The evaluation code is based on the implementation provided by
 the authors in https://github.com/bborja/mods_evaluation
 in `object_detection` sub-directory in `bbox_obstacle_detection` branch
 ([here](https://github.com/bborja/mods_evaluation/tree/bbox_obstacle_detection/object_detection)).
+The evaluation code for MaCVi 2024 is based on evaluation code from MaCVi 2023, written by Rok Mandeljc: https://github.com/rokm/macvi-usv-odce-toolkit.
 
 
 ## Getting started
 
 ### 1. Download the LaRS dataset
 
-Download and unpack [the LaRS dataset](https://vision.fe.uni-lj.si/public/mods).
+Download and unpack [the LaRS dataset](https://lojzezust.github.io/lars-dataset/).
 
 ### 2. Process the dataset with your detection method
 
-Use your algorithm to process the validation subset of the LaRS dataset.
+Use your algorithm to process the test subset of the LaRS dataset.
 
-For training data, you can use any other dataset that is available to
-you, including the [MODD2 dataset](https://box.vicos.si/borja/viamaro/index.html)
-and the older [MODD dataset](https://www.vicos.si/resources/modd).
+For training data, you can use LaRS as well as other publicly available data to train your method. In this case, please disclose this during the submission process.
 
 The algorithm should output the detections with rectangular axis-aligned
-bounding boxes of waterborne objects belonging to the following semantic
-classes: *vessel*, *person*, and *other*. The results should be stored
-in a single JSON file using the format described below.
+bounding boxes of waterborne objects. The class of the obstacle is not important and will be ignored in the evaluation process. The results should be stored in a single JSON file using the format described below.
 
 #### Results file format
 
@@ -83,19 +81,6 @@ object provides a `detections` array describing detected obstacles:
 The JSON file must contain the list of LaRS images, then the list of annotations, one annotation per image. The annotation element must contain the appropriate `id` filed (that matches the corresponding image ID). Each annotation element must contain a `detections` array, which contains the detections produced by your algorithm. If there are no detections in the frame, the `detections` should be empty. Otherwise, it should contain one object per detection, consisting of an `id` which should be unique within the image, and `bbox` (bounding box; `[x, y, width, height]`).
 
 The above example shows the structure of the results file. In fact, the easiest way of generating a correct results file would be to load the data from `panotpic_annotations.json` and, for each element of the `annotations` list, add the `detections` array.
-
-For reference, we provide an exemplar result JSON file for the methods YOLOv5:
-* [detection-results-original.zip](https://rokm.dynu.net/macvi2023_detection/detection-results-original.zip):
-  this archive contains original JSON files, as provided by the authors.
-* [detection-results-minimal.zip](https://rokm.dynu.net/macvi2023_detection/detection-results-minimal.zip):
-  this archive contains JSON files with minimum content required by the evaluation toolkit.
-
-These reference detection JSON files can also be used in the subsequent
-steps to verify that the evaluation toolkit has been properly installed
-and is functioning as expected. They also illustrate various options
-discussed above (for example, results for SSD omit empty `detections`
-array; results for FCOS and SSD use numeric class `type`, while MaskRCNN
-and YOLOv4 use string-based class `type`).
 
 ### 3. Install the evaluation toolkit
 
@@ -159,7 +144,7 @@ usage: macvi_usv_odce_tool [-h] [--version] command ...
 
 MaCVi USV Obstacle Detection Challenge Evaluation Toolkit
 
-options:
+optional arguments:
   -h, --help            show this help message and exit
   --version             show program's version number and exit
 
@@ -167,7 +152,8 @@ valid commands:
   command               command description
     evaluate (e)        Evaluate the results.
     prepare-submission (s)
-                        Evaluate the results and prepare archive for submission.
+                        Evaluate the results and prepare archive for
+                        submission.
     unpack-submission (u)
                         Unpack the submission archive.
 ```
@@ -181,7 +167,7 @@ macvi_usv_odce_tool evaluate --help
 macvi_usv_odce_tool prepare-submission --help
 ```
 
-NOTE: Runing the tool via the ``macvi-usv-odce-tool`` requires your
+NOTE: Running the tool via the ``macvi-usv-odce-tool`` requires your
 environment's scripts directory to be in `PATH`. This is usually the
 case when using virtual environments, but may not be the case if you
 are using your base python environment (especially on Windows). If
@@ -214,58 +200,18 @@ python3 macvi_usv_odce_tool.py --help
 
 While testing your algorithm locally, you can use the `evaluate` command
 to perform evaluation and receive immediate feedback. Assuming that your
-current working directory contains unpacked MODS dataset in `mods`
+current working directory contains unpacked LaRS dataset in `LaRS`
 sub-directory and the results JSON file called `results.json`,
 run:
 
 ```
-macvi-usv-odce-tool evaluate mods/mods.json results.json
+macvi-usv-odce-tool evaluate LaRS/ val results.json
 ```
 
-This should run the evaluation using all three detection evaluation
-setups from the *Bovcon et al.* paper:
-* Setup 1: evaluation using sea-edge based mask, taking into account the
-  class labels of ground truth and detections.
-* Setup 2: evaluation using sea-edge based mask, ignoring the class
-  labels (detection without recognition).
-* Setup 3: evaluation using danger-zone based mask (the radial area
-  with radius 15 meters in front of the USV), ignoring the class
-  labels.
+This should run the evaluation on the validation set of the LaRS dataset. Since the test set annotations are not publicly available, empty json files for test and validation sets are provided along with the evaluation tool.
 
-```
-MaCVi USV Obstacle Detection Challenge Evaluation Toolkit
-
-Settings:
- - mode: 'evaluate'
- - dataset JSON file: 'mods/mods.json'
- - results JSON file: 'results.json'
- - output file: None
- - sequence(s): None
-
-Evaluating Setup 1...
-Evaluation complete in 16.37 seconds!
-Evaluating Setup 2...
-Evaluation complete in 15.39 seconds!
-Evaluating Setup 3...
-Evaluation complete in 16.37 seconds!
-
-Results: F_all F_small F_medium F_large
-Setup_1: 0.122 0.065 0.209 0.260
-Setup_2: 0.172 0.090 0.385 0.522
-Setup_3: 0.964 0.976 0.958 0.968
-
-Challenge results (F_avg, F_s1, F_s2, F_s3):
-0.419 0.122 0.172 0.964
-
-Done!
-```
-
-The ranking metric for the challenge is the average of the overall
-F-score values obtained in each of the three setups (in the above
-example, `0.419 = (0.122 + 0.172 + 0.964) / 3`. In the case of the
-tie, the overall F-score from Setup 1 is used as the tie-breaker
-(in the above example, `0.122`).
-
+The ranking metric for the challenge is the F1 score with the IoU threshold being set at 0.3 In the case of a
+tie, the threshold will be raised until the tie is broken.
 
 ### 5. Prepare submission
 
@@ -287,7 +233,7 @@ containing the whole source code), the file is collected into archive
 as-is.
 
 To continue the example from the previous step, assuming that your
-current working directory contains unpacked MODS dataset in `mods`
+current working directory contains unpacked LaRS dataset in `LaRS`
 sub-directory, the results JSON file called `results.json`, and source
 code archive called `source-code.zip`, run:
 
@@ -295,42 +241,7 @@ code archive called `source-code.zip`, run:
 macvi-usv-odce-tool prepare-submission mods/mods.json results.json sample-code.zip
 ```
 
-The output of the tool should look similar to:
-
-```
-MaCVi USV Obstacle Detection Challenge Evaluation Toolkit
-
-Settings:
- - mode: 'prepare-submission'
- - dataset JSON file: 'mods/mods.json'
- - results JSON file: 'results.json'
- - source code path: 'sample-code.zip'
- - output file: 'submission.zip'
-
-Evaluating Setup 1...
-Evaluation complete in 13.08 seconds!
-Evaluating Setup 2...
-Evaluation complete in 12.17 seconds!
-Evaluating Setup 3...
-Evaluation complete in 14.96 seconds!
-
-Results: F_all F_small F_medium F_large
-Setup_1: 0.122 0.065 0.209 0.260
-Setup_2: 0.172 0.090 0.385 0.522
-Setup_3: 0.964 0.976 0.958 0.968
-
-Challenge results (F_avg, F_s1, F_s2, F_s3):
-0.419 0.122 0.172 0.964
-
-Preparing submission archive 'submission.zip'...
-Collecting raw results file 'results.json'...
-Collecting evaluation results file...
-Collecting source code from 'sample-code.zip'...
-
-Done!
-```
-
-and the tool should generate a file called `submission.zip˙ in the
+The tool should generate a file called `submission.zip` in the
 current working directory.
 
 To use a different name or a different target directory, you can provide
@@ -344,5 +255,5 @@ challenge's web page.
 
 Once the archive is submitted, the submission server backend will
 unpack the archive's contents using the `unpack-submission` command,
-and (optionally) re-evaluate the results using the local copy of the
+and evaluate the results using the local copy of the
 toolkit and the dataset annotations.

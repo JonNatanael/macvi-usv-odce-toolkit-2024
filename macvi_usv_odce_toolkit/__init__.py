@@ -56,3 +56,25 @@ def evaluate_detection_results_setup3(dataset_json_file, results_json_file, sequ
         mode='dz',
         ignore_class=True,
     )
+
+def evaluate_detection_results_lars(lars_path, eval_set, results_json_file):
+    """
+    Evaluation detection results using Setup 2 from Section VI-A in Bovcon et al. paper.
+
+    Setup 2 is similar to Setup 1, except that class information is ignored. Therefore,
+    it evaluates only obstacle detection without class identification, which is crucial
+    for path planning and collision avoidance.
+
+    This function is a helper wrapper for evaluation.evaluate_detection_results() function.
+    """
+    return evaluation.evaluate_detection_results(
+        lars_path,
+        eval_set,
+
+        # dataset_json_file,
+        results_json_file,
+        # sequences,
+        # Setup 2: sea-edge based mask, ignore class information
+        # mode='edge',
+        # ignore_class=True,
+    )
