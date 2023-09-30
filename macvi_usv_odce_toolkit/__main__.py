@@ -132,14 +132,19 @@ def cmd_prepare_submission(args):
         logging.error("Invalid source code path %r: not a file or directory!", source_code_path)
         sys.exit(-1)
 
-    # Run the evaluation
-    results = _perform_full_evaluation(lars_path, eval_set, results_json_file)
+    # Run the evaluation if annotations are present
+    annotations_path = os.path.join(lars_path,eval_set,'panoptic_annotations.json')
+    if os.path.exists(annotations_path):
+        logging.info("Performing evaluation")
+        results = _perform_full_evaluation(lars_path, eval_set, results_json_file)
 
-    # Display debug/extended results
-    _display_extended_results(results)
+        # Display debug/extended results
+        _display_extended_results(results)
 
-    # Display actual (short) results
-    _display_final_results(results)
+        # Display actual (short) results
+        _display_final_results(results)
+    else:
+        logging.info("Dataset annotations not found")
 
     # Prepare submission archive
     logging.info("")
@@ -149,12 +154,6 @@ def cmd_prepare_submission(args):
         # Collect raw detection results JSON as detection_results.json
         logging.info("Collecting raw results file %r...", results_json_file)
         archive.write(results_json_file, "detection_results.json")
-
-        # Collect evaluation results JSON as evaluation_results.json
-        # (dump to JSON string and write to archive directly, without temporary file)
-        logging.info("Collecting evaluation results file...")
-        evaluation_json_data = json.dumps(results, indent=2)
-        archive.writestr("evaluation_results.json", evaluation_json_data)
 
         # Collect source code into source_code directory
         logging.info("Collecting source code from %r...", source_code_path)
