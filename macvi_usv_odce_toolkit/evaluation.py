@@ -92,7 +92,7 @@ def convert_to_coco_structures(lars_path, eval_set, results_json_file):
                 'image_id': image_id,
                 'category_id': class_id,
                 'bbox': bbox,
-                'iscrowd': 0,
+                'iscrowd': annotated_obstacle['iscrowd'],
                 'area': annotated_obstacle['area'],
                 'segmentation': [],
                 'ignore': int(ignore),  # bool -> int
