@@ -50,6 +50,10 @@ def convert_to_coco_structures(lars_path, eval_set, results_json_file):
     dataset_annotations = dataset['annotations']
     results_annotations = results['annotations']
 
+    # sort both annotation arrays by id
+    dataset_annotations = sorted(dataset_annotations, key=lambda d: d['image_id'])
+    results_annotations = sorted(results_annotations, key=lambda d: d['image_id'])
+
     # Sanity check
     assert len(dataset_annotations) == len(results_annotations), "Mismatch in dataset and result sequences length! Did you perhaps supply results for the wrong LaRS subset?"
 
@@ -63,7 +67,7 @@ def convert_to_coco_structures(lars_path, eval_set, results_json_file):
 
     for data_ann, result_ann in zip(dataset_annotations, results_annotations):
 
-        assert data_ann['file_name'] == result_ann['file_name'], "Dataset and results sequence ID mismatch!"
+        assert data_ann['file_name'][:-4] == result_ann['file_name'][:-4], "Dataset and results sequence ID mismatch!"
 
         pan_ann_fn = f'{lars_path}/{eval_set}/panoptic_masks/{data_ann["file_name"]}'
         sem_ann_fn = f'{lars_path}/{eval_set}/semantic_masks/{data_ann["file_name"]}'
