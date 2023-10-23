@@ -1,5 +1,6 @@
 
 
+
 # USV Obstacle Detection Challenge Evaluation Toolkit
 
 This repository contains source code of the evaluation toolkit for the
@@ -125,7 +126,7 @@ The toolkit can be installed directly from the git repository, using the
 following command
 
 ```
-python3 -m pip install git+https://github.com/rokm/macvi-usv-odce-toolkit.git
+python3 -m pip install git+https://github.com/JonNatanael/macvi-usv-odce-toolkit-2024.git
 ```
 
 This will automatically check out the source code from the repository,
@@ -213,47 +214,10 @@ This should run the evaluation on the validation set of the LaRS dataset. Since 
 The ranking metric for the challenge is the F1 score with the IoU threshold being set at 0.3 In the case of a
 tie, the threshold will be raised until the tie is broken.
 
-### 5. Prepare submission
-
-Having obtained the results, you can prepare the submission archive.
-To do so, use the `macvi-usv-odce-tool` and `prepare-submission`
-command. Its behavior is similar to the `evaluate` command, except
-that it requires an additional argument - the path to the source
-code of the algorithm, which needs to be supplied as part of the
-submission.
-
-The tool performs the evaluation, and generates the archive that
-contains raw detection results (the results JSON file that was used
-for evaluation), the evaluation results, and the collected source code.
-
-If the source code path points to a directory, its contents are
-recursively collected into the submission archive. If the source code
-path points to a file (a single-file source, or a pre-generated archive
-containing the whole source code), the file is collected into archive
-as-is.
-
-To continue the example from the previous step, assuming that your
-current working directory contains unpacked LaRS dataset in `LaRS`
-sub-directory, the results JSON file called `results.json`, and source
-code archive called `source-code.zip`, run:
-
-```
-macvi-usv-odce-tool prepare-submission mods/mods.json results.json sample-code.zip
-```
-
-The tool should generate a file called `submission.zip` in the
-current working directory.
-
-To use a different name or a different target directory, you can provide
-a custom path via the `--output-file <filename>` command-line argument.
-
 
 ### 6. Submit the archive
 
-Once the submission archive is generated, you can submit it on the
-challenge's web page.
+Having obtained the results, you can submit them on the challenge's web page.
 
-Once the archive is submitted, the submission server backend will
-unpack the archive's contents using the `unpack-submission` command,
-and evaluate the results using the local copy of the
-toolkit and the dataset annotations.
+Once the json file is submitted, the submission server backend will evaluate the results using the local copy of the
+toolkit and the dataset annotations. The score will then be displayed on the leaderboard.
