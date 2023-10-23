@@ -29,12 +29,16 @@ def _display_extended_results(results):
     logging.info("")
 
 def _display_final_results(results):
+
     # Display final results to stdout
+
     f = results[0]
 
     print("Challenge results F1:")
-    res = {'F1': f}
-    print(res)
+
+    res = {'F1': 100 * f}
+
+    print(json.dumps(res))
 
 def _collect_to_archive(archive, path, archive_path):
     if os.path.isfile(path):
